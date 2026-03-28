@@ -13,7 +13,6 @@ const companyLinks = [
   { label: "Contact", href: "/contact" },
   { label: "Careers", href: "/careers" },
   { label: "Editorial Policy", href: "/editorial-policy" },
-  { label: "Admin Panel", href: "/admin" },
 ];
 
 const socials = [
