@@ -1,18 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+// app/(website)/categories/[categorySlug]/CategoryClient.tsx
 
-interface Article {
-  id: number;
-  title: string;
-  slug: string;
-  subtitle: string;
-  image_url: string;
-  read_time: string;
-  views: number;
-  published_at: string;
-  category_name: string;
+import Link from "next/link";
+import { useState, useRef, useCallback } from "react";
+import type { Article, Category, Pagination } from "./page";
+
+interface Props {
+  category: Category;
+  initialArticles: Article[];
+  initialPagination: Pagination;
 }
 
 function formatDate(dateStr: string) {
@@ -44,29 +41,50 @@ function ArticleSkeleton() {
   );
 }
 
-export default function ComparisonPage() {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function CategoryClient({
+  category,
+  initialArticles,
+  initialPagination,
+}: Props) {
+  const [articles, setArticles] = useState<Article[]>(initialArticles);
+  const [pagination, setPagination] = useState<Pagination>(initialPagination);
+  const [loading, setLoading] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        const res = await fetch("/api/web/comparison");
-        const json = await res.json();
-        if (json.success) {
-          setArticles(json.data);
-        } else {
-          setError("Failed to load articles.");
+  const sentinelRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (loading) return;
+      if (observerRef.current) observerRef.current.disconnect();
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && pagination.hasMore) {
+          loadMore();
         }
-      } catch {
-        setError("Something went wrong.");
-      } finally {
-        setLoading(false);
+      });
+      if (node) observerRef.current.observe(node);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [loading, pagination.hasMore]
+  );
+
+  async function loadMore() {
+    if (loading || !pagination.hasMore) return;
+    setLoading(true);
+    try {
+      const nextPage = pagination.page + 1;
+      const res = await fetch(
+        `/api/web/articles?category=${category.slug}&page=${nextPage}&limit=${pagination.limit}`
+      );
+      const json = await res.json();
+      if (json.success) {
+        setArticles((prev) => [...prev, ...json.data]);
+        setPagination(json.pagination);
       }
-    };
-    fetchArticles();
-  }, []);
+    } catch {
+      /* silent */
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const featured = articles[0];
   const rest = articles.slice(1);
@@ -139,17 +157,22 @@ export default function ComparisonPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <Link
-                  href="/"
-                  className="breadcrumb-a"
-                  style={{ color: "#999", textDecoration: "none", transition: "color 0.2s" }}
-                >
-                  Home
-                </Link>
-                <span style={{ color: "#ccc" }}>›</span>
-              </span>
-              <span style={{ color: "#555", fontWeight: 600 }}>Comparisons</span>
+              {[
+                { href: "/", label: "Home" },
+                { href: "/categories", label: "Categories" },
+              ].map((crumb, i) => (
+                <span key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Link
+                    href={crumb.href}
+                    className="breadcrumb-a"
+                    style={{ color: "#999", textDecoration: "none", transition: "color 0.2s" }}
+                  >
+                    {crumb.label}
+                  </Link>
+                  <span style={{ color: "#ccc" }}>›</span>
+                </span>
+              ))}
+              <span style={{ color: "#555", fontWeight: 600 }}>{category.name}</span>
             </nav>
 
             <div
@@ -162,7 +185,7 @@ export default function ComparisonPage() {
               }}
             >
               <div>
-                {/* Badge */}
+                {/* Category badge */}
                 <div
                   style={{
                     display: "inline-flex",
@@ -198,6 +221,7 @@ export default function ComparisonPage() {
                   </span>
                 </div>
 
+                {/* Category name — Playfair */}
                 <h1
                   style={{
                     fontFamily: "'Playfair Display', Georgia, serif",
@@ -209,98 +233,74 @@ export default function ComparisonPage() {
                     margin: 0,
                   }}
                 >
-                  Comparisons
+                  {category.name}
                 </h1>
               </div>
 
               {/* Article count pill */}
-              {!loading && !error && (
-                <div
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  background: "#fff5f0",
+                  border: "1.5px solid #fde0d0",
+                  borderRadius: "16px",
+                  padding: "14px 20px",
+                  flexShrink: 0,
+                }}
+              >
+                <span
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    background: "#fff5f0",
-                    border: "1.5px solid #fde0d0",
-                    borderRadius: "16px",
-                    padding: "14px 20px",
-                    flexShrink: 0,
+                    fontFamily: "'Playfair Display', Georgia, serif",
+                    fontSize: "2rem",
+                    fontWeight: 900,
+                    color: "#e85d26",
+                    lineHeight: 1,
                   }}
                 >
-                  <span
+                  {pagination.total}
+                </span>
+                <div>
+                  <p
                     style={{
-                      fontFamily: "'Playfair Display', Georgia, serif",
-                      fontSize: "2rem",
-                      fontWeight: 900,
-                      color: "#e85d26",
-                      lineHeight: 1,
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      color: "#111",
+                      margin: 0,
+                      lineHeight: 1.3,
                     }}
                   >
-                    {articles.length}
-                  </span>
-                  <div>
-                    <p
-                      style={{
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontSize: "0.75rem",
-                        fontWeight: 700,
-                        color: "#111",
-                        margin: 0,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      Total
-                    </p>
-                    <p
-                      style={{
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontSize: "0.72rem",
-                        color: "#bbb",
-                        margin: 0,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      Articles
-                    </p>
-                  </div>
+                    Total
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: "0.72rem",
+                      color: "#bbb",
+                      margin: 0,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    Articles
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* ── Loading State ── */}
-        {loading && (
-          <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "40px 32px" }}>
-            <div
-              style={{
-                borderRadius: "20px",
-                border: "1.5px solid #f0ebe4",
-                overflow: "hidden",
-                background: "#fff",
-                animation: "pulse 1.5s ease-in-out infinite",
-                display: "flex",
-                marginBottom: "40px",
-                minHeight: "280px",
-              }}
-            >
-              <div style={{ width: "480px", background: "#f0ebe4", flexShrink: 0 }} />
-              <div style={{ flex: 1, padding: "36px 40px", display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ height: "16px", background: "#f0ebe4", borderRadius: "6px", width: "40%" }} />
-                <div style={{ height: "28px", background: "#f0ebe4", borderRadius: "6px", width: "80%" }} />
-                <div style={{ height: "14px", background: "#f5f0ea", borderRadius: "6px", width: "100%" }} />
-                <div style={{ height: "14px", background: "#f5f0ea", borderRadius: "6px", width: "70%" }} />
-              </div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
-              {Array.from({ length: 3 }).map((_, i) => <ArticleSkeleton key={i} />)}
-            </div>
-          </div>
-        )}
-
-        {/* ── Error State ── */}
-        {!loading && error && (
-          <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "96px 32px", textAlign: "center" }}>
+        {/* ── No articles ── */}
+        {articles.length === 0 && (
+          <div
+            style={{
+              maxWidth: "1280px",
+              margin: "0 auto",
+              padding: "96px 32px",
+              textAlign: "center",
+            }}
+          >
             <p
               style={{
                 fontFamily: "'Source Serif 4', Georgia, serif",
@@ -311,10 +311,10 @@ export default function ComparisonPage() {
                 marginBottom: "20px",
               }}
             >
-              {error}
+              No articles found in this category yet.
             </p>
             <Link
-              href="/"
+              href="/categories"
               style={{
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: "0.82rem",
@@ -324,47 +324,22 @@ export default function ComparisonPage() {
                 textUnderlineOffset: "3px",
               }}
             >
-              ← Back to Home
+              ← Back to Categories
             </Link>
           </div>
         )}
 
-        {/* ── No Articles ── */}
-        {!loading && !error && articles.length === 0 && (
-          <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "96px 32px", textAlign: "center" }}>
-            <p
-              style={{
-                fontFamily: "'Source Serif 4', Georgia, serif",
-                fontSize: "1.1rem",
-                fontStyle: "italic",
-                fontWeight: 300,
-                color: "#aaa",
-                marginBottom: "20px",
-              }}
-            >
-              No comparison articles found yet.
-            </p>
-            <Link
-              href="/"
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "0.82rem",
-                fontWeight: 700,
-                color: "#e85d26",
-                textDecoration: "underline",
-                textUnderlineOffset: "3px",
-              }}
-            >
-              ← Back to Home
-            </Link>
-          </div>
-        )}
-
-        {/* ── Content ── */}
-        {!loading && !error && articles.length > 0 && (
+        {articles.length > 0 && (
           <>
             {/* ── Featured Card ── */}
-            <section style={{ maxWidth: "1280px", margin: "0 auto", padding: "40px 32px 24px" }}>
+            <section
+              style={{
+                maxWidth: "1280px",
+                margin: "0 auto",
+                padding: "40px 32px 24px",
+              }}
+            >
+              {/* Section label */}
               <p
                 style={{
                   fontFamily: "'DM Sans', sans-serif",
@@ -380,7 +355,7 @@ export default function ComparisonPage() {
               </p>
 
               <Link
-                href={`/comparison/${featured.slug}`}
+                href={`/${category.slug}/${featured.slug}`}
                 className="featured-link"
                 style={{
                   display: "flex",
@@ -426,6 +401,25 @@ export default function ComparisonPage() {
                       transition: "transform 0.5s ease",
                     }}
                   />
+                  {featured.featured === 1 && (
+                    <div style={{ position: "absolute", top: "14px", left: "14px" }}>
+                      <span
+                        style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: "0.65rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.12em",
+                          textTransform: "uppercase",
+                          padding: "4px 12px",
+                          borderRadius: "100px",
+                          background: "#e85d26",
+                          color: "#fff",
+                        }}
+                      >
+                        Featured
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
@@ -440,6 +434,7 @@ export default function ComparisonPage() {
                     minWidth: "260px",
                   }}
                 >
+                  {/* Title — Playfair */}
                   <h2
                     className="featured-title"
                     style={{
@@ -456,6 +451,7 @@ export default function ComparisonPage() {
                     {featured.title}
                   </h2>
 
+                  {/* Subtitle — Source Serif italic */}
                   {featured.subtitle && (
                     <p
                       style={{
@@ -474,6 +470,7 @@ export default function ComparisonPage() {
                     </p>
                   )}
 
+                  {/* Meta */}
                   <div
                     style={{
                       display: "flex",
@@ -486,7 +483,7 @@ export default function ComparisonPage() {
                       fontWeight: 500,
                     }}
                   >
-                    <span>{formatDate(featured.published_at)}</span>
+                    <span>{formatDate(featured.created_at)}</span>
                     {featured.read_time && (
                       <>
                         <span style={{ opacity: 0.4 }}>|</span>
@@ -501,6 +498,7 @@ export default function ComparisonPage() {
                     )}
                   </div>
 
+                  {/* Read link */}
                   <div
                     className="featured-arrow"
                     style={{
@@ -526,7 +524,13 @@ export default function ComparisonPage() {
 
             {/* ── Articles Grid ── */}
             {rest.length > 0 && (
-              <section style={{ maxWidth: "1280px", margin: "0 auto", padding: "8px 32px 64px" }}>
+              <section
+                style={{
+                  maxWidth: "1280px",
+                  margin: "0 auto",
+                  padding: "8px 32px 40px",
+                }}
+              >
                 <p
                   style={{
                     fontFamily: "'DM Sans', sans-serif",
@@ -551,7 +555,7 @@ export default function ComparisonPage() {
                   {rest.map((article) => (
                     <Link
                       key={article.id}
-                      href={`/comparison/${article.slug}`}
+                      href={`/${category.slug}/${article.slug}`}
                       className="article-card-link"
                       style={{
                         display: "flex",
@@ -595,6 +599,25 @@ export default function ComparisonPage() {
                             transition: "transform 0.5s ease",
                           }}
                         />
+                        {article.featured === 1 && (
+                          <div style={{ position: "absolute", top: "10px", left: "10px" }}>
+                            <span
+                              style={{
+                                fontFamily: "'DM Sans', sans-serif",
+                                fontSize: "0.62rem",
+                                fontWeight: 700,
+                                letterSpacing: "0.1em",
+                                textTransform: "uppercase",
+                                padding: "3px 10px",
+                                borderRadius: "100px",
+                                background: "#e85d26",
+                                color: "#fff",
+                              }}
+                            >
+                              Featured
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Card body */}
@@ -607,6 +630,7 @@ export default function ComparisonPage() {
                           gap: "8px",
                         }}
                       >
+                        {/* Title — Playfair */}
                         <h3
                           className="article-card-title"
                           style={{
@@ -626,6 +650,7 @@ export default function ComparisonPage() {
                           {article.title}
                         </h3>
 
+                        {/* Subtitle — Source Serif */}
                         {article.subtitle && (
                           <p
                             style={{
@@ -665,7 +690,7 @@ export default function ComparisonPage() {
                               fontWeight: 500,
                             }}
                           >
-                            {formatDate(article.published_at)}
+                            {formatDate(article.created_at)}
                           </span>
                           <span
                             style={{
@@ -698,6 +723,56 @@ export default function ComparisonPage() {
                 </div>
               </section>
             )}
+
+            {/* ── Infinite scroll sentinel ── */}
+            <div
+              ref={sentinelRef}
+              style={{
+                maxWidth: "1280px",
+                margin: "0 auto",
+                padding: "0 32px 64px",
+              }}
+            >
+              {loading && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                    gap: "20px",
+                  }}
+                >
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <ArticleSkeleton key={i} />
+                  ))}
+                </div>
+              )}
+              {!pagination.hasMore && articles.length > 6 && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    padding: "24px 0",
+                  }}
+                >
+                  <div style={{ flex: 1, height: "1px", background: "#ede7df" }} />
+                  <p
+                    style={{
+                      fontFamily: "'Source Serif 4', Georgia, serif",
+                      fontSize: "0.85rem",
+                      fontStyle: "italic",
+                      fontWeight: 300,
+                      color: "#bbb",
+                      margin: 0,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    You've seen all {pagination.total} articles
+                  </p>
+                  <div style={{ flex: 1, height: "1px", background: "#ede7df" }} />
+                </div>
+              )}
+            </div>
           </>
         )}
       </main>

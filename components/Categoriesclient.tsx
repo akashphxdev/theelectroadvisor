@@ -4,9 +4,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { Category } from "./page";
+import type { Category } from "../app/(webiste)/categories/page";
 
-// Soft pastel palette — each card gets its own tinted bg + icon tint
 const palette = [
   { bg: "#EFF6FF", iconBg: "#DBEAFE", border: "#BFDBFE", accent: "#2563EB", text: "#1D4ED8" },
   { bg: "#F5F3FF", iconBg: "#EDE9FE", border: "#C4B5FD", accent: "#7C3AED", text: "#6D28D9" },
@@ -24,18 +23,6 @@ function getTheme(index: number) {
   return palette[index % palette.length];
 }
 
-function SkeletonCard() {
-  return (
-    <div className="rounded-3xl bg-gray-100 animate-pulse overflow-hidden">
-      <div className="p-6 flex flex-col items-center gap-4">
-        <div className="w-20 h-20 rounded-2xl bg-gray-200" />
-        <div className="h-4 w-24 bg-gray-200 rounded-full" />
-        <div className="h-3 w-16 bg-gray-200 rounded-full" />
-      </div>
-    </div>
-  );
-}
-
 interface Props {
   initialCategories: Category[];
 }
@@ -49,68 +36,102 @@ export default function CategoriesClient({ initialCategories }: Props) {
   );
 
   return (
-    <main className="w-full min-h-screen" style={{ backgroundColor: "#F8F9FC", fontFamily: "'DM Sans', sans-serif" }}>
-
-      {/* Google Font */}
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');`}</style>
+    <main
+      className="w-full min-h-screen"
+      style={{ backgroundColor: "#faf7f4", fontFamily: "'DM Sans', sans-serif" }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      `}</style>
 
       {/* ── Header ── */}
-      <section className="w-full bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <section className="w-full bg-white border-b border-[#f0ebe4]">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-9 pb-6 sm:pb-8">
 
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-xs text-gray-400 mb-5 font-medium tracking-wide">
-            <Link href="/" className="hover:text-orange-500 transition-colors text-gray-400">Home</Link>
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-            </svg>
-            <span className="text-gray-500">Categories</span>
-          </div>
+          <nav className="flex items-center gap-2 mb-5 sm:mb-6 text-[0.78rem] font-medium text-[#aaa]">
+            <Link
+              href="/"
+              className="text-[#999] no-underline transition-colors duration-200 hover:text-[#e85d26]"
+            >
+              Home
+            </Link>
+            <span className="text-[#ccc]">›</span>
+            <span className="text-[#555] font-semibold">Categories</span>
+          </nav>
 
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+          {/* Title + Search */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 sm:gap-6">
+            {/* Title block */}
             <div>
-              <p className="text-xs font-bold tracking-[0.2em] uppercase text-orange-500 mb-2">Browse</p>
+              <p
+                className="text-[0.68rem] font-bold tracking-[0.18em] uppercase text-[#e85d26] mb-2"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Browse
+              </p>
               <h1
-                className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight"
-                style={{ fontFamily: "'DM Serif Display', serif" }}
+                className="font-black text-[#111] leading-[1.15] tracking-[-0.02em] mb-3"
+                style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: "clamp(1.6rem, 5vw, 3rem)",
+                }}
               >
                 All Categories
               </h1>
-              <p className="text-sm text-gray-500 mt-2 max-w-md leading-relaxed">
-                Explore every category — in-depth reviews, guides & comparisons.
+              <p
+                className="text-[0.95rem] sm:text-[1.05rem] font-light italic text-[#777] leading-relaxed m-0 border-l-[3px] border-[#e85d26] pl-3.5 max-w-[440px]"
+                style={{ fontFamily: "'Source Serif 4', Georgia, serif" }}
+              >
+                Explore every category — in-depth reviews, guides &amp; comparisons.
               </p>
             </div>
 
-            {/* Search + count */}
-            <div className="flex flex-col sm:items-end gap-3">
-              {/* Search */}
-              <div className="relative w-full sm:w-60">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search categories..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all"
+            {/* Search — full width on mobile */}
+            <div className="relative w-full sm:w-60 flex-shrink-0">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-[#aaa] pointer-events-none"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
                 />
-              </div>
+              </svg>
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-[38px] pr-4 py-[11px] text-[0.82rem] font-medium text-[#333] bg-[#fdf8f4] border-[1.5px] border-[#ede5db] rounded-full outline-none transition-[border-color,box-shadow] duration-200 box-border focus:border-[#e85d26] focus:shadow-[0_0_0_3px_rgba(232,93,38,0.12)]"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              />
             </div>
           </div>
         </div>
       </section>
 
       {/* ── Grid ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 sm:pb-20">
 
-        {/* Section label */}
-        <div className="flex items-center justify-between mb-7">
-          <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+        {/* Count + clear */}
+        <div className="flex items-center justify-between mb-5 sm:mb-7">
+          <p
+            className="text-[0.72rem] font-bold tracking-[0.15em] uppercase text-[#bbb]"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
             {filtered.length} {filtered.length === 1 ? "Category" : "Categories"}
-          </h2>
+          </p>
           {search && (
-            <button onClick={() => setSearch("")} className="text-xs text-orange-500 font-semibold hover:underline">
+            <button
+              onClick={() => setSearch("")}
+              className="text-[0.78rem] font-bold text-[#e85d26] bg-transparent border-none cursor-pointer underline underline-offset-[3px]"
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
               Clear search
             </button>
           )}
@@ -118,19 +139,40 @@ export default function CategoriesClient({ initialCategories }: Props) {
 
         {/* No results */}
         {filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          <div className="flex flex-col items-center justify-center py-20 sm:py-24 text-center">
+            <div className="w-[60px] h-[60px] rounded-2xl bg-[#f0ebe4] flex items-center justify-center mb-4">
+              <svg
+                className="w-7 h-7 text-[#ccc]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+                />
               </svg>
             </div>
-            <p className="text-gray-500 font-semibold">No results for &quot;{search}&quot;</p>
+            <p
+              className="text-[1.1rem] sm:text-[1.15rem] font-bold text-[#555] mb-1.5"
+              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            >
+              No results found
+            </p>
+            <p
+              className="text-[0.88rem] sm:text-[0.92rem] italic text-[#aaa] font-light"
+              style={{ fontFamily: "'Source Serif 4', Georgia, serif" }}
+            >
+              No categories match &ldquo;{search}&rdquo;
+            </p>
           </div>
         )}
 
-        {/* Cards */}
+        {/* Cards grid — 2 cols mobile → 3 tablet → 4 md → 5 desktop */}
         {filtered.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {filtered.map((cat, i) => {
               const theme = getTheme(i);
               const isHovered = hovered === cat.id;
@@ -138,48 +180,44 @@ export default function CategoriesClient({ initialCategories }: Props) {
               return (
                 <Link
                   key={cat.id}
-                  href={`/categories/${cat.slug}`}
+                  href={`/${cat.slug}`}
                   onMouseEnter={() => setHovered(cat.id)}
                   onMouseLeave={() => setHovered(null)}
-                  className="group flex flex-col items-center rounded-3xl p-5 cursor-pointer transition-all duration-300"
+                  className="flex flex-col items-center rounded-[18px] sm:rounded-[20px] p-4 sm:p-5 no-underline cursor-pointer transition-all duration-[250ms] ease-in-out"
                   style={{
-                    backgroundColor: isHovered ? theme.iconBg : "#FFFFFF",
-                    border: `1.5px solid ${isHovered ? theme.border : "#F1F5F9"}`,
+                    backgroundColor: isHovered ? theme.iconBg : "#ffffff",
+                    border: `1.5px solid ${isHovered ? theme.border : "#f0ebe4"}`,
                     boxShadow: isHovered
                       ? `0 8px 32px ${theme.accent}22, 0 2px 8px ${theme.accent}11`
-                      : "0 1px 4px rgba(0,0,0,0.05)",
+                      : "0 1px 4px rgba(0,0,0,0.04)",
                     transform: isHovered ? "translateY(-4px)" : "translateY(0)",
                   }}
                 >
-                  {/* Icon container */}
+                  {/* Icon */}
                   <div
-                    className="relative w-16 h-16 rounded-2xl flex items-center justify-center mb-3 transition-all duration-300"
+                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-[250ms] ease-in-out relative"
                     style={{
-                      backgroundColor: isHovered ? "#FFFFFF" : theme.bg,
+                      backgroundColor: isHovered ? "#fff" : theme.bg,
                       boxShadow: isHovered ? `0 4px 16px ${theme.accent}33` : "none",
                     }}
                   >
                     <img
                       src={cat.image_url}
                       alt={cat.name}
-                      className="w-10 h-10 object-contain transition-transform duration-300"
-                      style={{
-                        transform: isHovered ? "scale(1.15)" : "scale(1)",
-                      }}
+                      className="w-7 h-7 sm:w-10 sm:h-10 object-contain transition-transform duration-[250ms] ease-in-out"
+                      style={{ transform: isHovered ? "scale(1.15)" : "scale(1)" }}
                     />
-
-                    {/* Inactive dot */}
                     {cat.is_active === 0 && (
                       <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-gray-400 border-2 border-white" />
                     )}
                   </div>
 
-                  {/* Name */}
+                  {/* Category name */}
                   <p
-                    className="text-[13px] font-700 text-center leading-tight transition-colors duration-200"
+                    className="text-[0.78rem] sm:text-[0.82rem] font-bold text-center leading-[1.3] m-0 transition-colors duration-200 tracking-[0.01em]"
                     style={{
-                      fontWeight: 700,
-                      color: isHovered ? theme.text : "#111827",
+                      fontFamily: "'DM Sans', sans-serif",
+                      color: isHovered ? theme.text : "#111",
                     }}
                   >
                     {cat.name}
@@ -187,14 +225,24 @@ export default function CategoriesClient({ initialCategories }: Props) {
 
                   {/* Arrow on hover */}
                   <div
-                    className="mt-2 transition-all duration-300 overflow-hidden"
+                    className="mt-2 overflow-hidden transition-all duration-[250ms] ease-in-out"
                     style={{
                       maxHeight: isHovered ? "20px" : "0px",
                       opacity: isHovered ? 1 : 0,
                     }}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke={theme.accent} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke={theme.accent}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
                     </svg>
                   </div>
                 </Link>
