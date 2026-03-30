@@ -3,18 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-const categories = [
-  { name: "Smartphones", href: "/categories/smartphones" },
-  { name: "Laptops",     href: "/categories/laptops"     },
-  { name: "Audio",       href: "/categories/audio"       },
-  { name: "Wearables",   href: "/categories/wearables"   },
-  { name: "Smart Home",  href: "/categories/smart-home"  },
-  { name: "Gaming",      href: "/categories/gaming"      },
-  { name: "Cameras",     href: "/categories/cameras"     },
-  { name: "Accessories", href: "/categories/accessories" },
-];
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  image_url: string;
+  is_active: number;
+}
 
 export default function Header() {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -22,6 +20,16 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // Fetch categories from API
+  useEffect(() => {
+    fetch("/api/web/categories")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setCategories(json.data ?? []);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -42,6 +50,9 @@ export default function Header() {
   useEffect(() => {
     if (searchOpen) setTimeout(() => searchRef.current?.focus(), 50);
   }, [searchOpen]);
+
+  // Only active, max 6 for dropdown
+  const activeCategories = categories.filter((c) => c.is_active === 1).slice(0, 6);
 
   return (
     <header
@@ -91,17 +102,17 @@ export default function Header() {
 
               {categoryOpen && (
                 <div
-                  className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-2xl py-3 z-50"
+                  className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-100 rounded-2xl shadow-2xl py-3 z-50"
                   style={{ animation: "fadeSlideIn 0.18s ease" }}
                 >
                   <p className="text-xs font-bold tracking-widest uppercase text-gray-400 px-4 pb-2">
                     Browse Categories
                   </p>
-                  <div className="grid grid-cols-2 gap-0.5 px-2">
-                    {categories.map((cat) => (
+                  <div className="flex flex-col gap-0.5 px-2">
+                    {activeCategories.map((cat) => (
                       <Link
-                        key={cat.name}
-                        href={cat.href}
+                        key={cat.id}
+                        href={`/categories/${cat.slug}`}
                         className="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-500 transition-all duration-150"
                         onClick={() => setCategoryOpen(false)}
                       >
@@ -125,7 +136,6 @@ export default function Header() {
               )}
             </div>
 
-            {/* ✅ Buying Guides & Deals removed | Comparison added */}
             {[
               { label: "Reviews",    href: "/reviews"    },
               { label: "Comparison", href: "/comparison" },
@@ -216,14 +226,14 @@ export default function Header() {
             />
           </div>
 
-          {/* Categories Grid */}
+          {/* Mobile Categories Grid — max 6 */}
           <div className="mb-3">
             <p className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-2">Categories</p>
             <div className="grid grid-cols-2 gap-1.5">
-              {categories.map((cat) => (
+              {activeCategories.map((cat) => (
                 <Link
-                  key={cat.name}
-                  href={cat.href}
+                  key={cat.id}
+                  href={`/categories/${cat.slug}`}
                   className="flex items-center px-3 py-2 rounded-xl bg-gray-50 text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-500 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -233,7 +243,7 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Nav Links — mobile bhi updated */}
+          {/* Nav Links */}
           <div className="border-t border-gray-100 pt-3 flex flex-col gap-0.5">
             {[
               { label: "Reviews",    href: "/reviews"    },

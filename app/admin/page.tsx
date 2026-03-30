@@ -264,39 +264,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Bottom row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          {
-            label: "Published Today",
-            value: loading ? "—" : String(data?.stats?.publishedToday ?? 0),
-            icon: "✅",
-            sub: "Articles live on site",
-          },
-          {
-            label: "Pending Review",
-            value: loading ? "—" : String(data?.stats?.reviewCount ?? 0),
-            icon: "🕐",
-            sub: "Awaiting approval",
-          },
-          {
-            label: "Draft Articles",
-            value: loading ? "—" : String(data?.stats?.draftCount ?? 0),
-            icon: "📝",
-            sub: "Work in progress",
-          },
-        ].map((b) => (
-          <div key={b.label} className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex items-center gap-4">
-            <span className="text-2xl">{b.icon}</span>
-            <div>
-              <p className="text-xl font-extrabold text-gray-900">{b.value}</p>
-              <p className="text-xs font-semibold text-gray-700">{b.label}</p>
-              <p className="text-xs text-gray-400">{b.sub}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
     </div>
   );
 }
