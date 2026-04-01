@@ -179,8 +179,8 @@ export default function CookiePolicyPage() {
             <p className="text-gray-600 text-sm mb-3">Questions about our cookie practices? Get in touch:</p>
             <div className="bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4 text-sm text-gray-700 space-y-1">
               <p className="font-bold text-gray-900">ElectroAdvisor</p>
-              <p>Email: <a href="mailto:privacy@electroadvisor.com" className="text-orange-500 hover:underline">privacy@electroadvisor.com</a></p>
-              <p>Website: <a href="/" className="text-orange-500 hover:underline">www.electroadvisor.com</a></p>
+              <p>Email: <a href="mailto:privacy@theelectroadvisor.com" className="text-orange-500 hover:underline">privacy@theelectroadvisor.com</a></p>
+              <p>Website: <a href="/" className="text-orange-500 hover:underline">www.theelectroadvisor.com</a></p>
             </div>
           </div>
 

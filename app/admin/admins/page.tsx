@@ -2,14 +2,44 @@
 
 import { useState, useEffect } from "react";
 
+// ✅ Fix 1: Admin interface define kiya
+interface Admin {
+  id: string | number;
+  name: string;
+  email: string;
+  role: string;
+  is_active: boolean | number;
+  last_login?: string | null;
+  created_at?: string | null;
+}
+
+// ✅ Fix 2: Form interface define kiya
+interface AdminForm {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  is_active: boolean;
+}
+
+// ✅ Fix 3: roleBadge return type define kiya
+interface RoleBadge {
+  bg: string;
+  text: string;
+  label: string;
+}
+
 export default function AdminsPage() {
-  const [admins, setAdmins] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "admin", is_active: true });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  // ✅ Fix 4: admins state properly typed ([] nahi, Admin[] hai)
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [modal, setModal] = useState<boolean>(false);
+  const [form, setForm] = useState<AdminForm>({
+    name: "", email: "", password: "", role: "admin", is_active: true,
+  });
+  const [saving, setSaving] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const fetchAdmins = async () => {
     setLoading(true);
@@ -63,23 +93,28 @@ export default function AdminsPage() {
     }
   };
 
-  const formatDate = (d) => {
+  // ✅ Fix 5: formatDate parameter typed
+  const formatDate = (d: string | null | undefined): string => {
     if (!d) return "—";
-    return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    return new Date(d).toLocaleDateString("en-GB", {
+      day: "2-digit", month: "short", year: "numeric",
+    });
   };
 
-  const getInitials = (name) => {
+  // ✅ Fix 6: getInitials parameter typed
+  const getInitials = (name: string | null | undefined): string => {
     if (!name) return "?";
-    return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+    return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  const roleBadge = (role) => {
-    const map = {
+  // ✅ Fix 7: roleBadge parameter typed + return type + index signature
+  const roleBadge = (role: string): RoleBadge => {
+    const map: Record<string, RoleBadge> = {
       super_admin: { bg: "bg-purple-50", text: "text-purple-700", label: "Super Admin" },
       admin:       { bg: "bg-blue-50",   text: "text-blue-700",   label: "Admin"       },
       editor:      { bg: "bg-yellow-50", text: "text-yellow-700", label: "Editor"      },
     };
-    return map[role] || { bg: "bg-gray-100", text: "text-gray-600", label: role };
+    return map[role] ?? { bg: "bg-gray-100", text: "text-gray-600", label: role };
   };
 
   return (
@@ -127,7 +162,8 @@ export default function AdminsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {admins.map((a, i) => {
+                {/* ✅ Fix 8: map parameter 'a' typed as Admin */}
+                {admins.map((a: Admin, i: number) => {
                   const badge = roleBadge(a.role);
                   return (
                     <tr key={a.id} className="hover:bg-gray-50 transition-colors">
@@ -195,7 +231,7 @@ export default function AdminsPage() {
                 <input
                   type="text"
                   value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="Full name"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 />
@@ -209,7 +245,7 @@ export default function AdminsPage() {
                 <input
                   type="email"
                   value={form.email}
-                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   placeholder="admin@example.com"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 />
@@ -224,13 +260,13 @@ export default function AdminsPage() {
                   <input
                     type={showPassword ? "text" : "password"}
                     value={form.password}
-                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                    onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                     placeholder="Min. 6 characters"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(s => !s)}
+                    onClick={() => setShowPassword((s) => !s)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? (
@@ -252,7 +288,7 @@ export default function AdminsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
                 <select
                   value={form.role}
-                  onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                  onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
                 >
                   <option value="admin">Admin</option>
@@ -269,7 +305,7 @@ export default function AdminsPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
+                  onClick={() => setForm((f) => ({ ...f, is_active: !f.is_active }))}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
                     form.is_active ? "bg-blue-600" : "bg-gray-200"
                   }`}

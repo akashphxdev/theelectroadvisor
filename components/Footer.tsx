@@ -11,7 +11,6 @@ interface Category {
 
 const companyLinks = [
   { label: "About Us", href: "/about" },
-  { label: "Comparisons", href: "/comparison" },
 ];
 
 export default function Footer() {
@@ -53,7 +52,7 @@ export default function Footer() {
                 className="font-extrabold text-xl text-[#111] tracking-tight"
                 style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
               >
-                Electro<span className="text-[#e85d26]">Advisor</span>
+                TheElectro<span className="text-[#e85d26]">Advisor</span>
               </span>
             </Link>
 
@@ -126,7 +125,7 @@ export default function Footer() {
             <div className="w-[22px] h-[22px] bg-[#111] rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-white text-[10px] font-bold">E</span>
             </div>
-            © 2026 ElectroAdvisor. All rights reserved.
+            © 2026 TheElectroAdvisor. All rights reserved.
           </div>
 
           {/* Legal links */}

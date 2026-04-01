@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 
 interface Category {
@@ -11,44 +11,71 @@ interface Category {
   image_url: string | null;
 }
 
+interface MessageState {
+  text: string;
+  type: "success" | "error" | "";
+}
+
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [fetchLoading, setFetchLoading] = useState(true);
-  const [message, setMessage] = useState({ text: "", type: "" });
+  const [fetchLoading, setFetchLoading] = useState<boolean>(true);
+  const [message, setMessage] = useState<MessageState>({ text: "", type: "" });
 
-  const fetchCategories = async () => {
+  // ✅ Fix 1: useCallback mein wrap — stable reference
+  const showMessage = useCallback((text: string, type: "success" | "error") => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage({ text: "", type: "" }), 3000);
+  }, []);
+
+  // ✅ Fix 2: fetchCategories useCallback mein — delete ke baad call ke liye
+  const fetchCategories = useCallback(async () => {
     setFetchLoading(true);
     try {
       const res = await fetch("/api/admin/categories");
       const data = await res.json();
-      if (data.success) setCategories(data.data);
+      if (data.success) setCategories(data.data as Category[]);
+      else showMessage("Failed to load categories", "error");
     } catch {
       showMessage("Failed to load categories", "error");
+    } finally {
+      setFetchLoading(false);
     }
-    setFetchLoading(false);
-  };
+  }, [showMessage]);
 
+  // ✅ Fix 3: useEffect mein inline async load + cancelled flag (cleanup)
+  // setState sirf async callback ke andar call ho raha hai — synchronous nahi
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    let cancelled = false;
 
-  const showMessage = (text: string, type: "success" | "error") => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage({ text: "", type: "" }), 3000);
-  };
+    const load = async () => {
+      setFetchLoading(true);
+      try {
+        const res = await fetch("/api/admin/categories");
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.success) setCategories(data.data as Category[]);
+        else showMessage("Failed to load categories", "error");
+      } catch {
+        if (!cancelled) showMessage("Failed to load categories", "error");
+      } finally {
+        if (!cancelled) setFetchLoading(false);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, [showMessage]);
 
   const handleDelete = async (slug: string) => {
     if (!confirm("Are you sure you want to delete this category?")) return;
     try {
-      const res = await fetch(`/api/admin/categories/${slug}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/admin/categories/${slug}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
-        showMessage(data.message, "success");
+        showMessage(data.message as string, "success");
         fetchCategories();
       } else {
-        showMessage(data.message, "error");
+        showMessage(data.message as string, "error");
       }
     } catch {
       showMessage("Failed to delete", "error");
@@ -75,13 +102,11 @@ export default function CategoriesPage() {
 
       {/* Message */}
       {message.text && (
-        <div
-          className={`mb-4 p-3 rounded text-sm font-medium ${
-            message.type === "success"
-              ? "bg-green-100 text-green-700 border border-green-300"
-              : "bg-red-100 text-red-700 border border-red-300"
-          }`}
-        >
+        <div className={`mb-4 p-3 rounded text-sm font-medium ${
+          message.type === "success"
+            ? "bg-green-100 text-green-700 border border-green-300"
+            : "bg-red-100 text-red-700 border border-red-300"
+        }`}>
           {message.text}
         </div>
       )}
@@ -119,11 +144,9 @@ export default function CategoriesPage() {
                   </td>
                 </tr>
               ) : (
-                categories.map((cat, i) => (
+                categories.map((cat: Category, i: number) => (
                   <tr key={cat.slug} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4 text-gray-500">{i + 1}</td>
-
-                    {/* Icon Column */}
                     <td className="px-6 py-4">
                       {isValidImageUrl(cat.image_url) ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -143,14 +166,11 @@ export default function CategoriesPage() {
                       ) : null}
                       <div
                         className="w-9 h-9 rounded-md bg-gray-100 items-center justify-center text-gray-300 text-lg border border-gray-200"
-                        style={{
-                          display: isValidImageUrl(cat.image_url) ? "none" : "flex",
-                        }}
+                        style={{ display: isValidImageUrl(cat.image_url) ? "none" : "flex" }}
                       >
                         🖼️
                       </div>
                     </td>
-
                     <td className="px-6 py-4 font-medium text-gray-800">{cat.name}</td>
                     <td className="px-6 py-4">
                       <span className="text-gray-400 font-mono text-xs bg-gray-100 px-2 py-1 rounded">
@@ -158,21 +178,15 @@ export default function CategoriesPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          cat.is_active
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        cat.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                      }`}>
                         {cat.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-400 text-xs">
                       {new Date(cat.created_at).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
+                        day: "2-digit", month: "short", year: "numeric",
                       })}
                     </td>
                     <td className="px-6 py-4">

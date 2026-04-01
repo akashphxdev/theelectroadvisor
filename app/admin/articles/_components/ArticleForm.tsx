@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 
 const Editor = dynamic(() => import("@/components/admin/editor/Editor"), { ssr: false });
 
+// ✅ Fix 1: All types properly defined
 type Category = { id: number; name: string };
 type Author = { id: number; name: string };
 
@@ -42,14 +43,13 @@ const defaultForm: ArticleFormData = {
 export default function ArticleForm({ mode, articleId, initialData }: Props) {
   const router = useRouter();
   const [form, setForm] = useState<ArticleFormData>({ ...defaultForm, ...initialData });
-  // initialContent is stable - Editor should NOT re-receive content on every form state change
   const initialContent = useRef<string>(initialData?.content || "").current;
   const [categories, setCategories] = useState<Category[]>([]);
   const [authors, setAuthors] = useState<Author[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [saving, setSaving] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
   const [imagePreview, setImagePreview] = useState<string>(initialData?.image_url || "");
-  const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploading, setImageUploading] = useState<boolean>(false);
   const oldImageUrlRef = useRef<string>(initialData?.image_url || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,13 +59,19 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
         fetch("/api/admin/categories"),
         fetch("/api/admin/authors"),
       ]);
-      if (catRes.ok) { const d = await catRes.json(); setCategories(d.data || d.categories || []); }
-      if (authRes.ok) { const d = await authRes.json(); setAuthors(d.authors || d.data || []); }
+      if (catRes.ok) {
+        const d = await catRes.json();
+        setCategories(d.data || d.categories || []);
+      }
+      if (authRes.ok) {
+        const d = await authRes.json();
+        setAuthors(d.authors || d.data || []);
+      }
     };
     fetchMeta();
   }, []);
 
-  // Auto-generate slug from title (only on create)
+  // ✅ Fix 2: form.title dependency — mode added to deps array
   useEffect(() => {
     if (mode !== "create") return;
     const slug = form.title
@@ -75,12 +81,13 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
     setForm((prev) => ({ ...prev, slug }));
-  }, [form.title]);
+  }, [form.title, mode]);
 
   const handleChange = (field: keyof ArticleFormData, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // ✅ Fix 3: err typed as unknown, safely handled
   const handleImageUpload = async (file: File) => {
     setImageUploading(true);
     try {
@@ -89,16 +96,22 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
       formData.append("target", "articles");
       const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setForm((prev) => ({ ...prev, image_url: data.path }));
-      setImagePreview(data.path);
-    } catch (err: any) {
-      setError(err.message || "Image upload failed");
+      if (!res.ok) throw new Error(data.error as string);
+      setForm((prev) => ({ ...prev, image_url: data.path as string }));
+      setImagePreview(data.path as string);
+    } catch (err: unknown) {
+      // ✅ Fix 4: err properly narrowed instead of 'any'
+      if (err instanceof Error) {
+        setError(err.message || "Image upload failed");
+      } else {
+        setError("Image upload failed");
+      }
     } finally {
       setImageUploading(false);
     }
   };
 
+  // ✅ Fix 5: err typed as unknown, safely handled
   const handleSubmit = async () => {
     setError("");
     if (!form.title.trim()) { setError("Title required hai"); return; }
@@ -124,30 +137,38 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
       );
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
+      if (!res.ok) throw new Error((data.error as string) || "Failed");
       router.push("/admin/articles");
-    } catch (err: any) {
-      setError(err.message || "Kuch gadbad ho gaya");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || "Kuch gadbad ho gaya");
+      } else {
+        setError("Kuch gadbad ho gaya");
+      }
     } finally {
       setSaving(false);
     }
   };
 
-  const inputStyle = {
+  // ✅ Fix 6: inputStyle properly typed with CSSProperties
+  const inputStyle: React.CSSProperties = {
     width: "100%", padding: "9px 12px", border: "1px solid #e2e2e6",
     borderRadius: "8px", fontSize: "14px", outline: "none",
-    boxSizing: "border-box" as const, fontFamily: "sans-serif",
+    boxSizing: "border-box", fontFamily: "sans-serif",
   };
-  const labelStyle = {
+
+  const labelStyle: React.CSSProperties = {
     display: "block", fontSize: "13px", fontWeight: 600,
     color: "#444", marginBottom: "6px",
   };
-  const sectionStyle = {
+
+  const sectionStyle: React.CSSProperties = {
     background: "#fff", border: "1px solid #e2e2e6",
     borderRadius: "12px", padding: "20px", marginBottom: "16px",
   };
 
-  const imageDisplaySrc = imagePreview
+  // ✅ Fix 7: imageDisplaySrc typed as string | null
+  const imageDisplaySrc: string | null = imagePreview
     ? imagePreview.startsWith("/uploads/")
       ? `/api/serve-file/${imagePreview.replace("/uploads/", "")}`
       : imagePreview
@@ -162,7 +183,9 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
             {mode === "create" ? "Create Article" : "Edit Article"}
           </h1>
           <p style={{ margin: "4px 0 0", color: "#666", fontSize: "14px" }}>
-            {mode === "create" ? "Fill in the details below to publish a new article." : "Article details update karo."}
+            {mode === "create"
+              ? "Fill in the details below to publish a new article."
+              : "Article details update karo."}
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
@@ -213,8 +236,11 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
               {imageUploading ? (
                 <span style={{ color: "#888" }}>Uploading...</span>
               ) : imageDisplaySrc ? (
-                <img src={imageDisplaySrc} alt="preview"
-                  style={{ maxHeight: "180px", maxWidth: "100%", borderRadius: "8px", objectFit: "cover" }} />
+                <img
+                  src={imageDisplaySrc}
+                  alt="preview"
+                  style={{ maxHeight: "180px", maxWidth: "100%", borderRadius: "8px", objectFit: "cover" }}
+                />
               ) : (
                 <div style={{ color: "#aaa" }}>
                   <div style={{ fontSize: "28px", marginBottom: "8px" }}>☁</div>
@@ -228,11 +254,17 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
               type="file"
               accept="image/*"
               style={{ display: "none" }}
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleImageUpload(f);
+              }}
             />
             {imagePreview && (
               <button
-                onClick={() => { setImagePreview(""); setForm((p) => ({ ...p, image_url: "" })); }}
+                onClick={() => {
+                  setImagePreview("");
+                  setForm((p) => ({ ...p, image_url: "" }));
+                }}
                 style={{
                   marginTop: "8px", padding: "6px 12px", border: "1px solid #fca5a5",
                   borderRadius: "6px", background: "#fff", color: "#dc2626",
@@ -247,23 +279,39 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
             <h3 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 700 }}>Article Details</h3>
             <div style={{ marginBottom: "14px" }}>
               <label style={labelStyle}>Title *</label>
-              <input style={inputStyle} placeholder="Article title"
-                value={form.title} onChange={(e) => handleChange("title", e.target.value)} />
+              <input
+                style={inputStyle}
+                placeholder="Article title"
+                value={form.title}
+                onChange={(e) => handleChange("title", e.target.value)}
+              />
             </div>
             <div style={{ marginBottom: "14px" }}>
               <label style={labelStyle}>Slug</label>
-              <input style={inputStyle} placeholder="auto-generated-slug"
-                value={form.slug} onChange={(e) => handleChange("slug", e.target.value)} />
+              <input
+                style={inputStyle}
+                placeholder="auto-generated-slug"
+                value={form.slug}
+                onChange={(e) => handleChange("slug", e.target.value)}
+              />
             </div>
             <div style={{ marginBottom: "14px" }}>
               <label style={labelStyle}>Subtitle</label>
-              <input style={inputStyle} placeholder="Optional subtitle"
-                value={form.subtitle} onChange={(e) => handleChange("subtitle", e.target.value)} />
+              <input
+                style={inputStyle}
+                placeholder="Optional subtitle"
+                value={form.subtitle}
+                onChange={(e) => handleChange("subtitle", e.target.value)}
+              />
             </div>
             <div>
               <label style={labelStyle}>Keywords</label>
-              <input style={inputStyle} placeholder="comma, separated, keywords"
-                value={form.keywords} onChange={(e) => handleChange("keywords", e.target.value)} />
+              <input
+                style={inputStyle}
+                placeholder="comma, separated, keywords"
+                value={form.keywords}
+                onChange={(e) => handleChange("keywords", e.target.value)}
+              />
             </div>
           </div>
 
@@ -285,45 +333,71 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
 
             <div style={{ marginBottom: "14px" }}>
               <label style={labelStyle}>Category</label>
-              <select style={{ ...inputStyle, background: "#fff" }}
-                value={form.category_id} onChange={(e) => handleChange("category_id", e.target.value)}>
+              <select
+                style={{ ...inputStyle, background: "#fff" }}
+                value={form.category_id}
+                onChange={(e) => handleChange("category_id", e.target.value)}
+              >
                 <option value="">— None —</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {/* ✅ Fix 8: category c typed as Category */}
+                {categories.map((c: Category) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
               </select>
             </div>
 
             <div style={{ marginBottom: "14px" }}>
               <label style={labelStyle}>Author</label>
-              <select style={{ ...inputStyle, background: "#fff" }}
-                value={form.author_id} onChange={(e) => handleChange("author_id", e.target.value)}>
+              <select
+                style={{ ...inputStyle, background: "#fff" }}
+                value={form.author_id}
+                onChange={(e) => handleChange("author_id", e.target.value)}
+              >
                 <option value="">— None —</option>
-                {authors.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                {/* ✅ Fix 9: author a typed as Author */}
+                {authors.map((a: Author) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
               </select>
             </div>
 
             <div style={{ marginBottom: "14px" }}>
               <label style={labelStyle}>Published At</label>
-              <input type="datetime-local" style={inputStyle}
-                value={form.published_at} onChange={(e) => handleChange("published_at", e.target.value)} />
+              <input
+                type="datetime-local"
+                style={inputStyle}
+                value={form.published_at}
+                onChange={(e) => handleChange("published_at", e.target.value)}
+              />
             </div>
 
             <div style={{ marginBottom: "14px" }}>
               <label style={labelStyle}>Read Time</label>
-              <input style={inputStyle} placeholder="e.g. 5 min"
-                value={form.read_time} onChange={(e) => handleChange("read_time", e.target.value)} />
+              <input
+                style={inputStyle}
+                placeholder="e.g. 5 min"
+                value={form.read_time}
+                onChange={(e) => handleChange("read_time", e.target.value)}
+              />
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
-                <input type="checkbox" checked={form.is_active}
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
                   onChange={(e) => handleChange("is_active", e.target.checked)}
-                  style={{ width: "16px", height: "16px", accentColor: "#111" }} />
+                  style={{ width: "16px", height: "16px", accentColor: "#111" }}
+                />
                 <span style={{ fontSize: "14px", fontWeight: 500 }}>Active</span>
               </label>
               <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
-                <input type="checkbox" checked={form.featured}
+                <input
+                  type="checkbox"
+                  checked={form.featured}
                   onChange={(e) => handleChange("featured", e.target.checked)}
-                  style={{ width: "16px", height: "16px", accentColor: "#111" }} />
+                  style={{ width: "16px", height: "16px", accentColor: "#111" }}
+                />
                 <span style={{ fontSize: "14px", fontWeight: 500 }}>Featured</span>
               </label>
             </div>

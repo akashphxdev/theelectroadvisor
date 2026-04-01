@@ -481,7 +481,7 @@ export default function HomePage() {
                   <div key={i} className="flex-shrink-0 w-36 h-28 rounded-2xl bg-orange-50 animate-pulse" />
                 ))
               : data?.categories.map((cat) => (
-                  <Link key={cat.id} href={`/categories/${cat.slug}`} className="flex-shrink-0 group">
+                  <Link key={cat.id} href={`/${cat.slug}`} className="flex-shrink-0 group">
                     <div className="relative w-36 h-28 rounded-2xl overflow-hidden border-2 border-transparent group-hover:border-orange-400 group-hover:scale-105 group-hover:-translate-y-1 transition-all duration-300 shadow-md">
                       <img src={img(cat.image_url)} alt={cat.name} className="w-full h-full object-fill block" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
@@ -560,7 +560,7 @@ export default function HomePage() {
                     <h2 className="font-serif text-xl sm:text-2xl font-black text-gray-900 tracking-tight">{catSection.category_name}</h2>
                   </div>
                 </div>
-                <Link href={`/categories/${catSection.category_slug}`} className="text-sm font-bold text-gray-400 hover:text-orange-500 transition-colors flex items-center gap-1 font-sans">
+                <Link href={`/${catSection.category_slug}`} className="text-sm font-bold text-gray-400 hover:text-orange-500 transition-colors flex items-center gap-1 font-sans">
                   View all
                   <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />

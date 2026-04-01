@@ -102,8 +102,8 @@ export default function TermsOfServicePage() {
                   <p className="text-gray-600 text-sm mb-3">For questions about these Terms, contact us at:</p>
                   <div className="bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4 text-sm text-gray-700 space-y-1">
                     <p className="font-bold text-gray-900">ElectroAdvisor</p>
-                    <p>Email: <a href="mailto:legal@electroadvisor.com" className="text-orange-500 hover:underline">legal@electroadvisor.com</a></p>
-                    <p>Website: <a href="/" className="text-orange-500 hover:underline">www.electroadvisor.com</a></p>
+                    <p>Email: <a href="mailto:legal@theelectroadvisor.com" className="text-orange-500 hover:underline">legal@theelectroadvisor.com</a></p>
+                    <p>Website: <a href="/" className="text-orange-500 hover:underline">www.theelectroadvisor.com</a></p>
                   </div>
                 </div>
               ) : (
