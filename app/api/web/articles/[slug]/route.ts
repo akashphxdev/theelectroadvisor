@@ -16,6 +16,10 @@ export async function GET(
         { status: 400 }
       );
     }
+     await pool.query(
+      `UPDATE tblarticles SET views = views + 1 WHERE slug = ? AND is_active = 1`,
+      [slug]
+    );
 
     const [rows]: any = await pool.query(
       `SELECT 

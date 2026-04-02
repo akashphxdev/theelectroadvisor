@@ -36,9 +36,12 @@ type Props = {
 const defaultForm: ArticleFormData = {
   title: "", slug: "", subtitle: "", content: "",
   image_url: "", category_id: "", author_id: "",
-  published_at: "", read_time: "", keywords: "",
+  published_at: new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 16),// ✅ current date/time
+  read_time: "5 min",                                  // ✅ default read time
+  keywords: "",
   is_active: true, featured: false,
 };
+
 
 export default function ArticleForm({ mode, articleId, initialData }: Props) {
   const router = useRouter();
@@ -46,6 +49,7 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
   const initialContent = useRef<string>(initialData?.content || "").current;
   const [categories, setCategories] = useState<Category[]>([]);
   const [authors, setAuthors] = useState<Author[]>([]);
+  const [slugEdited, setSlugEdited] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [imagePreview, setImagePreview] = useState<string>(initialData?.image_url || "");
@@ -73,7 +77,7 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
 
   // ✅ Fix 2: form.title dependency — mode added to deps array
   useEffect(() => {
-    if (mode !== "create") return;
+    if (slugEdited) return;
     const slug = form.title
       .toLowerCase()
       .trim()
@@ -81,7 +85,7 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
     setForm((prev) => ({ ...prev, slug }));
-  }, [form.title, mode]);
+  }, [form.title, slugEdited]);
 
   const handleChange = (field: keyof ArticleFormData, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -292,7 +296,10 @@ export default function ArticleForm({ mode, articleId, initialData }: Props) {
                 style={inputStyle}
                 placeholder="auto-generated-slug"
                 value={form.slug}
-                onChange={(e) => handleChange("slug", e.target.value)}
+                onChange={(e) => {
+                  setSlugEdited(true);
+                  handleChange("slug", e.target.value);
+                }}
               />
             </div>
             <div style={{ marginBottom: "14px" }}>

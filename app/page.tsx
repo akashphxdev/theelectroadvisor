@@ -46,7 +46,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 function img(url: string) {
   if (!url) return "";
   if (url.startsWith("http")) return url;
-  return `${BASE_URL}${url}`;
+  return `${url}`;
 }
 
 function formatDate(dateStr: string) {
